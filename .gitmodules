@@ -1,0 +1,3 @@
+[submodule "ThirdParty/FeedReader"]
+	path = ThirdParty/FeedReader
+	url = https://github.com/asimonov-im/FeedReader.git

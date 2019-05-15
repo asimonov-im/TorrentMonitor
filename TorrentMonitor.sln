@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.352
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentMonitorUI", "TorrentMonitorUI\TorrentMonitorUI.csproj", "{0B5683AD-8B08-47FC-A966-2A91ECCD109C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TorrentMonitorLib", "TorrentMonitorLib\TorrentMonitorLib.csproj", "{441074D8-1145-467B-99B9-0B713BB82445}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeedReader", "ThirdParty\FeedReader\FeedReader\FeedReader.csproj", "{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0B5683AD-8B08-47FC-A966-2A91ECCD109C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B5683AD-8B08-47FC-A966-2A91ECCD109C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B5683AD-8B08-47FC-A966-2A91ECCD109C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B5683AD-8B08-47FC-A966-2A91ECCD109C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{441074D8-1145-467B-99B9-0B713BB82445}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{441074D8-1145-467B-99B9-0B713BB82445}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{441074D8-1145-467B-99B9-0B713BB82445}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{441074D8-1145-467B-99B9-0B713BB82445}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {78C41D3A-FFF9-434D-8BF7-D1DD96ABA98B}
+	EndGlobalSection
+EndGlobal

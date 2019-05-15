@@ -1,0 +1,15 @@
+{
+  "TixatiBaseUrl": "http://lenovo-ubuntu:8889",
+  "FeedUpdateFrequency": 300,
+  "Feeds": [
+    {
+      "Description": "DistroWatch",
+      "Url": "https://distrowatch.com/news/torrents.xml"
+    }
+  ],
+  "Patterns": [
+    "^NetBSD-(.*)-amd64(.*)$"
+  ],
+  "FeedItemMatches": [],
+  "Torrents": []
+}
