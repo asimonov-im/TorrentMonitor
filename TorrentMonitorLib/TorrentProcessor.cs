@@ -11,9 +11,9 @@ namespace TorrentMonitorLib
         private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         private readonly ITorrentClient torrentClient;
-        private readonly AsyncProducerConsumerQueue<Torrent> input;
+        private readonly AsyncCollection<Torrent> input;
 
-        public TorrentProcessor(ITorrentClient torrentClient, AsyncProducerConsumerQueue<Torrent> input)
+        public TorrentProcessor(ITorrentClient torrentClient, AsyncCollection<Torrent> input)
         {
             if (torrentClient == null)
             {
@@ -35,7 +35,7 @@ namespace TorrentMonitorLib
                 // The AsyncProducerConsumerQueue should never be in a completed state,
                 // so DequeueAsync should only throw OperationCanceledException,
                 // in which case the item should still be in the queue.
-                var item = await input.DequeueAsync(cancellationToken).ConfigureAwait(false);
+                var item = await input.TakeAsync(cancellationToken).ConfigureAwait(false);
                 logger.ConditionalDebug("Processing \"{0}\"", item.Description);
 
                 try
@@ -47,7 +47,7 @@ namespace TorrentMonitorLib
                     // Put the item back in the queue, so it is not lost.
                     // Do not provide a CancellationToken to try to ensure that the operation succeeds.
                     logger.Warn("Adding \"{0}\" back into the queue due to failure", item.Description);
-                    await input.EnqueueAsync(item).ConfigureAwait(false);
+                    await input.AddAsync(item).ConfigureAwait(false);
 
                     if (ex is OperationCanceledException)
                     {

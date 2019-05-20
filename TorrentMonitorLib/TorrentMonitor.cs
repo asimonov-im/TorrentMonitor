@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
 using NLog;
+
+using static TorrentMonitorLib.AsyncExtensions;
+using static TorrentMonitorLib.SerializationHelpers;
 
 namespace TorrentMonitorLib
 {
@@ -13,17 +17,21 @@ namespace TorrentMonitorLib
         private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         private readonly MonitorConfig config;
+        private readonly MonitorState state;
 
         private bool isStarted;
         private CancellationTokenSource ctSource;
-        private List<FeedProcessor> feedProcessors;
-        private Task[] tasks;
-        private AsyncProducerConsumerQueue<FeedItemMatch> feedItemQueue;
-        private AsyncProducerConsumerQueue<Torrent> torrentQueue;
+        private Dictionary<Uri, FeedProcessor> feedProcessors;
+        private List<Task> tasks;
+        private ConcurrentQueue<FeedItemMatch> feedItemQueue;
+        private ConcurrentQueue<Torrent> torrentQueue;
+        private AsyncCollection<FeedItemMatch> feedItemQueueAsync;
+        private AsyncCollection<Torrent> torrentQueueAsync;
 
-        private TorrentMonitor(MonitorConfig config)
+        private TorrentMonitor(MonitorConfig config, MonitorState state)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
+            this.state = state ?? throw new ArgumentNullException(nameof(state)); ;
         }
 
         public void Start()
@@ -32,37 +40,44 @@ namespace TorrentMonitorLib
             {
                 logger.Info("Starting");
 
-                var allTasks = new List<Task>();
+                tasks = new List<Task>();
                 ctSource = new CancellationTokenSource();
-                feedProcessors = new List<FeedProcessor>();
-                feedItemQueue = new AsyncProducerConsumerQueue<FeedItemMatch>(config.FeedItemMatches);
-                torrentQueue = new AsyncProducerConsumerQueue<Torrent>(config.Torrents);
+                feedProcessors = new Dictionary<Uri, FeedProcessor>();
+                feedItemQueue = new ConcurrentQueue<FeedItemMatch>(state.FeedItemMatches);
+                feedItemQueueAsync = new AsyncCollection<FeedItemMatch>(feedItemQueue);
+                torrentQueue = new ConcurrentQueue<Torrent>(state.Torrents);
+                torrentQueueAsync = new AsyncCollection<Torrent>(torrentQueue);
 
-                var feedProcessorDelay = TimeSpan.FromSeconds(config.FeedUpdateFrequency);
+                var feedProcessorDelay = TimeSpan.FromSeconds(config.FeedUpdateFrequencySeconds);
                 foreach (var feedInfo in config.Feeds)
                 {
-                    var feedItemSource = new FeedItemSource(feedInfo.Url);
-                    var feedProcessor = new FeedProcessor(feedItemSource, this, feedItemQueue, feedInfo.LastItemId);
-                    feedProcessors.Add(feedProcessor);
+                    if (!feedInfo.Enabled) continue;
 
-                    var processorTask = TaskExtensions.PeriodicWithDelay(feedProcessor.Process, feedProcessorDelay, ctSource.Token);
-                    allTasks.Add(processorTask);
+                    var feedItemSource = new FeedItemSource(feedInfo.Url);
+                    state.LastProcessedIds.TryGetValue(feedInfo.Url, out var lastItemId);
+                    var feedProcessor = new FeedProcessor(feedItemSource, this, feedItemQueueAsync, lastItemId);
+                    feedProcessors.Add(feedProcessor.FeedUrl, feedProcessor);
+
+                    var processorTask = PeriodicTaskWithDelay(feedProcessor.Process, feedProcessorDelay, ctSource.Token);
+                    tasks.Add(processorTask);
                 }
 
-                var feedItemMatchProcessor = new FeedItemMatchProcessor(feedItemQueue, torrentQueue);
-                allTasks.Add(feedItemMatchProcessor.Process(ctSource.Token));
+                var feedItemMatchProcessor = new FeedItemMatchProcessor(feedItemQueueAsync, torrentQueueAsync);
+                tasks.Add(feedItemMatchProcessor.Process(ctSource.Token));
 
                 var tixatiClient = new TixatiHttpClient(config.TixatiBaseUrl);
-                var torrentProcessor = new TorrentProcessor(tixatiClient, torrentQueue);
-                allTasks.Add(torrentProcessor.Process(ctSource.Token));
+                var torrentProcessor = new TorrentProcessor(tixatiClient, torrentQueueAsync);
+                tasks.Add(torrentProcessor.Process(ctSource.Token));
 
-                tasks = allTasks.ToArray();
+                var stateSaveDelay = TimeSpan.FromSeconds(config.StateAutosaveFrequencySeconds);
+                var saveStateTask = PeriodicTaskWithDelay(SaveUpdatedState, stateSaveDelay, ctSource.Token);
+                tasks.Add(saveStateTask);
 
                 isStarted = true;
             }
         }
 
-        public void Stop()
+        public async Task StopAsync()
         {
             if (isStarted)
             {
@@ -71,44 +86,24 @@ namespace TorrentMonitorLib
                 // Signal cancellation and wait for all tasks to complete.
                 // Once this is done, we can safely read out state information
                 // out of the data processors and queues
-                CancelTasksAndLogExceptions();
+                await CancelTasksAndLogExceptions().ConfigureAwait(false);
 
                 // Prevent any further additions to the queues
-                feedItemQueue.CompleteAdding();
-                torrentQueue.CompleteAdding();
+                feedItemQueueAsync.CompleteAdding();
+                torrentQueueAsync.CompleteAdding();
 
-                UpdateSettings();
-                MonitorConfig.WriteToFile(config);
+                var saveConfigTask = SaveUpdatedConfig(CancellationToken.None);
+                var saveStateTask = SaveUpdatedState(CancellationToken.None);
+                await Task.WhenAll(saveConfigTask, saveStateTask).ConfigureAwait(false);
 
                 isStarted = false;
-            }
-        }
-
-        private void CancelTasksAndLogExceptions()
-        {
-            ctSource.Cancel();
-            try
-            {
-                Task.WaitAll(tasks);
-            }
-            catch (AggregateException ae)
-            {
-                ae.Handle(ex =>
-                {
-                    if (!(ex is TaskCanceledException))
-                    {
-                        logger.Error(ex);
-                    }
-
-                    return true;
-                });
             }
         }
 
         public async Task AddTorrent(
             Uri location,
             string description = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (location == null)
             {
@@ -121,13 +116,31 @@ namespace TorrentMonitorLib
 
             logger.Debug("Adding torrent: \"{0}\"", location);
             var torrent = new Torrent(location, true, description);
-            await torrentQueue.EnqueueAsync(torrent, cancellationToken).ConfigureAwait(false);
+            await torrentQueueAsync.AddAsync(torrent, cancellationToken).ConfigureAwait(false);
         }
 
-        public static TorrentMonitor FromSettingsFile(string filePath)
+        public static async Task<TorrentMonitor> FromDisk(string configFilePath, string stateFilePath)
         {
-            var settings = MonitorConfig.ReadFromFile(filePath);
-            return new TorrentMonitor(settings);
+            var readConfigTask = ReadFromFileAsync<MonitorConfig>(configFilePath);
+            var readStateTask = ReadFromFileAsync<MonitorState>(stateFilePath);
+
+            // Failing to load the configuration is a fatal error
+            MonitorConfig config = await readConfigTask.ConfigureAwait(false);
+            config.FilePath = configFilePath;
+
+            // Failing to load saved state is OK
+            MonitorState state;
+            try
+            {
+                state = await readStateTask.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                state = new MonitorState();
+            }
+            state.FilePath = stateFilePath;
+
+            return new TorrentMonitor(config, state);
         }
 
         public IReadOnlyCollection<MatchPattern> GetPatterns()
@@ -135,14 +148,53 @@ namespace TorrentMonitorLib
             return config.Patterns;
         }
 
-        private void UpdateSettings()
+        private async Task CancelTasksAndLogExceptions()
         {
-            config.FeedItemMatches = feedItemQueue.GetConsumingEnumerable().ToList();
-            config.Torrents = torrentQueue.GetConsumingEnumerable().ToList();
+            ctSource.Cancel();
 
-            for (int i = 0; i < feedProcessors.Count; ++i)
+            var allTasks = Task.WhenAll(tasks);
+            try
             {
-                config.Feeds[i].LastItemId = feedProcessors[i].LastItemId;
+                await allTasks.ConfigureAwait(false);
+            }
+            catch
+            {
+                allTasks.Exception?.Handle(ex =>
+                {
+                    logger.Error(ex);
+                    return true;
+                });
+            }
+        }
+
+        private async Task SaveUpdatedState(CancellationToken cancellationToken)
+        {
+            state.FeedItemMatches = feedItemQueue.ToList();
+            state.Torrents = torrentQueue.ToList();
+            foreach (var feedProcessor in feedProcessors.Values)
+            {
+                state.LastProcessedIds[feedProcessor.FeedUrl] = feedProcessor.LastItemId;
+            }
+
+            try
+            {
+                await WriteToFile(state, state.FilePath, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to write state to file.");
+            }
+        }
+
+        private async Task SaveUpdatedConfig(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await WriteToFile(config, config.FilePath, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to write configuration to file.");
             }
         }
     }

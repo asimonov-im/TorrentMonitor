@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.VisualBasic.ApplicationServices;
+using Nito.AsyncEx.Synchronous;
 using TorrentMonitorLib;
 
 namespace TorrentMonitorUI
@@ -13,6 +14,7 @@ namespace TorrentMonitorUI
     {
         // TODO: Should this use AppDomain.CurrentDomain.BaseDirectory instead?
         private static readonly string ConfigFilePath = Path.Combine(Application.StartupPath, "config.json");
+        private static readonly string StateFilePath = Path.Combine(Application.StartupPath, "state.json");
 
         public SingleInstanceController()
         {
@@ -33,9 +35,9 @@ namespace TorrentMonitorUI
         /// </summary>
         protected override async void OnCreateMainForm()
         {
-            var monitor = TorrentMonitor.FromSettingsFile(ConfigFilePath);
+            var monitor = TorrentMonitor.FromDisk(ConfigFilePath, StateFilePath).WaitAndUnwrapException();
             MainForm = new MainForm(monitor);
-            await AddTorrentAsync(CommandLineArgs);
+            await AddTorrentAsync(CommandLineArgs).ConfigureAwait(false);
         }
 
         private async Task AddTorrentAsync(ReadOnlyCollection<string> args)

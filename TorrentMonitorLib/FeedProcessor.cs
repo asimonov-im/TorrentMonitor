@@ -15,7 +15,12 @@ namespace TorrentMonitorLib
 
         private readonly IFeedItemSource feedItemSource;
         private readonly IPatternSource patternSource;
-        private readonly AsyncProducerConsumerQueue<FeedItemMatch> output;
+        private readonly AsyncCollection<FeedItemMatch> output;
+
+        /// <summary>
+        /// Gets the feed URL.
+        /// </summary>
+        public Uri FeedUrl => feedItemSource.FeedUrl;
 
         /// <summary>
         /// Gets the ID of the last item successfully processed from the feed.
@@ -32,12 +37,12 @@ namespace TorrentMonitorLib
         public FeedProcessor(
             IFeedItemSource feedItemSource,
             IPatternSource patternSource,
-            AsyncProducerConsumerQueue<FeedItemMatch> output,
+            AsyncCollection<FeedItemMatch> output,
             string lastItemId)
         {
-            this.feedItemSource = feedItemSource;
-            this.patternSource = patternSource;
-            this.output = output;
+            this.feedItemSource = feedItemSource ?? throw new ArgumentNullException(nameof(feedItemSource));
+            this.patternSource = patternSource ?? throw new ArgumentNullException(nameof(patternSource));
+            this.output = output ?? throw new ArgumentNullException(nameof(output));
             this.LastItemId = lastItemId;
         }
 
@@ -48,7 +53,7 @@ namespace TorrentMonitorLib
         /// <param name="cancellationToken">Cancellation token that can be used to abort the operation.</param>
         public async Task Process(CancellationToken cancellationToken)
         {
-            logger.Info("Processing items");
+            logger.ConditionalTrace("Processing items");
             var patterns = patternSource.GetPatterns();
 
             try
@@ -120,7 +125,7 @@ namespace TorrentMonitorLib
             if (Uri.TryCreate(item.Link, UriKind.Absolute, out Uri matchUrl))
             {
                 var match = new FeedItemMatch(item.Title, matchUrl);
-                await output.EnqueueAsync(match, cancellationToken).ConfigureAwait(false);
+                await output.AddAsync(match, cancellationToken).ConfigureAwait(false);
             }
             else
             {

@@ -19,14 +19,8 @@ namespace TorrentMonitorLib
         /// <summary>
         /// Gets or sets a value indicating whether the feed should be monitored.
         /// </summary>
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Disabled { get; set; }
-
-        /// <summary>
-        /// Gets or sets the id of the last item processed from the feed.
-        /// </summary>
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string LastItemId { get; set; }
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Include)]
+        public bool Enabled { get; set; }
 
         /// <summary>
         /// Gets or sets the feed URL.

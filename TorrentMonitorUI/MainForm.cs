@@ -34,17 +34,24 @@ namespace TorrentMonitorUI
             }
         }
 
-        private void Form1_Closing(object sender, CancelEventArgs e)
+        private async void Form1_Closing(object sender, CancelEventArgs e)
         {
+            // Always cancel, so we can wait for StopAsync() to finish, when actually shutting down
+            e.Cancel = true;
+
             var result = MessageBox.Show("Are you sure you want to quit?", this.Text, MessageBoxButtons.YesNo);
-            if (result == DialogResult.No)
+            if (result == DialogResult.Yes)
             {
-                e.Cancel = true;
-            }
-            else
-            {
-                monitor.Stop();
+                // Disable UI so user can't click on anything while we're waiting for tasks
+                Enabled = false;
+
+                // Stop the monitor
+                await monitor.StopAsync();
                 NLog.LogManager.Shutdown();
+
+                // Unregister from the callback and manually close the form
+                FormClosing -= Form1_Closing;
+                Close();
             }
         }
 

@@ -13,12 +13,10 @@ namespace TorrentMonitorLib
         {
         private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        private readonly AsyncProducerConsumerQueue<FeedItemMatch> input;
-        private readonly AsyncProducerConsumerQueue<Torrent> output;
+        private readonly AsyncCollection<FeedItemMatch> input;
+        private readonly AsyncCollection<Torrent> output;
 
-        public FeedItemMatchProcessor(
-            AsyncProducerConsumerQueue<FeedItemMatch> input,
-            AsyncProducerConsumerQueue<Torrent> output)
+        public FeedItemMatchProcessor(AsyncCollection<FeedItemMatch> input, AsyncCollection<Torrent> output)
         {
             this.input = input ?? throw new ArgumentNullException(nameof(input));
             this.output = output ?? throw new ArgumentNullException(nameof(output));
@@ -28,12 +26,12 @@ namespace TorrentMonitorLib
         {
             while (await input.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
             {
-                var item = await input.DequeueAsync(cancellationToken).ConfigureAwait(false);
+                var item = await input.TakeAsync(cancellationToken).ConfigureAwait(false);
                 logger.ConditionalDebug("Processing \"{0}\"", item.Title);
 
                 // Do not pass a CancellationToken, so that the operation cannot be interrupted.
                 var torrentItem = new Torrent(item.Url, true, item.Title);
-                await output.EnqueueAsync(torrentItem).ConfigureAwait(false);
+                await output.AddAsync(torrentItem).ConfigureAwait(false);
             }
         }
     }
