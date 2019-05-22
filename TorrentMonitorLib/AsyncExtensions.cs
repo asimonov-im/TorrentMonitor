@@ -29,7 +29,7 @@ namespace TorrentMonitorLib
         /// <param name="cancellationToken">Cancellation token that can be used to abort the operation.</param>
         public static async Task WriteTextAsync(string filePath, string text, CancellationToken cancellationToken = default)
         {
-            var mode = FileMode.OpenOrCreate;
+            var mode = FileMode.Create;
             var access = FileAccess.Write;
             var share = FileShare.None;
             int bufferSize = 4096;
