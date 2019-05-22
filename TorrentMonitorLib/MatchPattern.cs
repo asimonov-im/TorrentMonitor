@@ -6,7 +6,7 @@ using TorrentMonitorLib.Settings;
 namespace TorrentMonitorLib
 {
     [JsonConverter(typeof(MatchPatternConverter))]
-    public readonly struct MatchPattern
+    public class MatchPattern
     {
         private static readonly RegexOptions PatternOptions =
             RegexOptions.Compiled |
@@ -20,8 +20,25 @@ namespace TorrentMonitorLib
 
         public MatchPattern(string pattern)
         {
-            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                throw new ArgumentException($"The {nameof(pattern)} must not be null or whitespace."); ;
+            }
+
+            Pattern = pattern;
             CompiledPattern = new Regex(pattern, PatternOptions);
+        }
+
+        public static MatchPattern TryCreate(string pattern)
+        {
+            try
+            {
+                return new MatchPattern(pattern);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public override string ToString() => Pattern;

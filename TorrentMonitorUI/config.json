@@ -2,6 +2,7 @@
   "TixatiBaseUrl": "http://lenovo-ubuntu:8889",
   "FeedUpdateFrequencySeconds": 150,
   "StateAutosaveFrequencySeconds": 300,
+  "ConfigAutosaveFrequencySeconds": 300,
   "Feeds": [
     {
       "Description": "DistroWatch",

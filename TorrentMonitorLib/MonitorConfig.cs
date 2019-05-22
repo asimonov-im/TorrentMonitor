@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -27,9 +28,12 @@ namespace TorrentMonitorLib
         public int StateAutosaveFrequencySeconds { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public int ConfigAutosaveFrequencySeconds { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public List<FeedInfo> Feeds { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public List<MatchPattern> Patterns { get; set; }
+        public ImmutableList<MatchPattern> Patterns { get; set; }
     }
 }

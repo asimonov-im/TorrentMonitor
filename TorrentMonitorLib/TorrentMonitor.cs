@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,12 @@ namespace TorrentMonitorLib
         private ConcurrentQueue<Torrent> torrentQueue;
         private AsyncCollection<FeedItemMatch> feedItemQueueAsync;
         private AsyncCollection<Torrent> torrentQueueAsync;
+
+        public ImmutableList<MatchPattern> Patterns
+        {
+            get => config.Patterns;
+            set => config.Patterns = value ?? throw new ArgumentNullException(nameof(value));
+        }
 
         private TorrentMonitor(MonitorConfig config, MonitorState state)
         {
@@ -72,6 +79,10 @@ namespace TorrentMonitorLib
                 var stateSaveDelay = TimeSpan.FromSeconds(config.StateAutosaveFrequencySeconds);
                 var saveStateTask = PeriodicTaskWithDelay(SaveUpdatedState, stateSaveDelay, ctSource.Token);
                 tasks.Add(saveStateTask);
+
+                var configSaveDelay = TimeSpan.FromSeconds(config.ConfigAutosaveFrequencySeconds);
+                var configStateTask = PeriodicTaskWithDelay(SaveUpdatedConfig, configSaveDelay, ctSource.Token);
+                tasks.Add(configStateTask);
 
                 isStarted = true;
             }
