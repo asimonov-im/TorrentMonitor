@@ -1,5 +1,5 @@
 {
-  "TixatiBaseUrl": "http://lenovo-ubuntu:8889",
+  "TixatiBaseUrl": "http://192.168.1.250:8889",
   "FeedUpdateFrequencySeconds": 150,
   "StateAutosaveFrequencySeconds": 300,
   "ConfigAutosaveFrequencySeconds": 300,
