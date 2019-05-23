@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
 using NLog;
+using TixatiLib;
 
 using static TorrentMonitorLib.AsyncExtensions;
 using static TorrentMonitorLib.SerializationHelpers;

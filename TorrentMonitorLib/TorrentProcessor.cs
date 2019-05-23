@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
 using NLog;
+using TixatiLib;
 
 namespace TorrentMonitorLib
 {

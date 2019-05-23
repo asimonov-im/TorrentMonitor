@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ThirdParty\FeedReader\FeedReader\FeedReader.csproj" />
+    <ProjectReference Include="..\TixatiLib\TixatiLib.csproj" />
   </ItemGroup>
 
 </Project>

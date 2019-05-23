@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TorrentMonitorLib", "Torren
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeedReader", "ThirdParty\FeedReader\FeedReader\FeedReader.csproj", "{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TixatiLib", "TixatiLib\TixatiLib.csproj", "{B2049EB8-3532-40BE-A73F-C0B048F84042}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D76A11C-DDD1-4CED-87C4-E3DB652BA7BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2049EB8-3532-40BE-A73F-C0B048F84042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2049EB8-3532-40BE-A73F-C0B048F84042}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2049EB8-3532-40BE-A73F-C0B048F84042}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2049EB8-3532-40BE-A73F-C0B048F84042}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
