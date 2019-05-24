@@ -28,6 +28,9 @@ namespace TorrentMonitorLib
         public int StateAutosaveFrequencySeconds { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public int TixatiPingFrequencySeconds { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public int ConfigAutosaveFrequencySeconds { get; set; }
 
         [JsonProperty(Required = Required.Always)]

@@ -12,7 +12,7 @@ namespace TixatiLib
     /// <summary>
     /// Communicates with Tixati using its web interface.
     /// </summary>
-    public class TixatiHttpClient : ITorrentClient
+    public class TixatiClient : ITorrentClient
     {
         private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private static readonly Uri ActionEndpoint = new Uri("transfers/action", UriKind.Relative);
@@ -24,7 +24,7 @@ namespace TixatiLib
         private readonly Uri transfersActionUri;
         private readonly Uri transfersUri;
 
-        public TixatiHttpClient(Uri serverUri)
+        public TixatiClient(Uri serverUri)
         {
             if (!serverUri.IsAbsoluteUri)
             {

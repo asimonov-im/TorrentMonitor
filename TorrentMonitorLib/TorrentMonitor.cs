@@ -74,9 +74,13 @@ namespace TorrentMonitorLib
                 var feedItemMatchProcessor = new FeedItemMatchProcessor(feedItemQueueAsync, torrentQueueAsync);
                 tasks.Add(feedItemMatchProcessor.Process(ctSource.Token));
 
-                var tixatiClient = new TixatiHttpClient(config.TixatiBaseUrl);
-                var torrentProcessor = new TorrentProcessor(tixatiClient, torrentQueueAsync);
+                var tixatiClient = new TixatiClientWithStatus(new TixatiClient(config.TixatiBaseUrl), true);
+                var torrentProcessor = new TorrentProcessor(tixatiClient, tixatiClient.Status, torrentQueueAsync);
                 tasks.Add(torrentProcessor.Process(ctSource.Token));
+
+                var tixatiPingDelay = TimeSpan.FromSeconds(config.TixatiPingFrequencySeconds);
+                var tixatiPingTask = PeriodicTaskWithDelay(tixatiClient.PingAsync, tixatiPingDelay, ctSource.Token);
+                tasks.Add(tixatiPingTask);
 
                 var stateSaveDelay = TimeSpan.FromSeconds(config.StateAutosaveFrequencySeconds);
                 var saveStateTask = PeriodicTaskWithDelay(SaveUpdatedState, stateSaveDelay, ctSource.Token);

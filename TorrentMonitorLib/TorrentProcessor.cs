@@ -12,9 +12,13 @@ namespace TorrentMonitorLib
         private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         private readonly ITorrentClient torrentClient;
+        private readonly AsyncManualResetEvent torrentClientStatus;
         private readonly AsyncCollection<Torrent> input;
 
-        public TorrentProcessor(ITorrentClient torrentClient, AsyncCollection<Torrent> input)
+        public TorrentProcessor(
+            ITorrentClient torrentClient,
+            AsyncManualResetEvent torrentClientStatus,
+            AsyncCollection<Torrent> input)
         {
             if (torrentClient == null)
             {
@@ -25,8 +29,9 @@ namespace TorrentMonitorLib
                 throw new ArgumentNullException(nameof(input));
             }
 
-            this.torrentClient = torrentClient;
-            this.input = input;
+            this.torrentClient = torrentClient ?? throw new ArgumentNullException(nameof(torrentClient));
+            this.torrentClientStatus = torrentClientStatus ?? throw new ArgumentNullException(nameof(torrentClientStatus));
+            this.input = input ?? throw new ArgumentNullException(nameof(input));
         }
 
         public async Task Process(CancellationToken cancellationToken)
@@ -41,6 +46,7 @@ namespace TorrentMonitorLib
 
                 try
                 {
+                    await torrentClientStatus.WaitAsync().ConfigureAwait(false);
                     await AddItemAsync(item, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
