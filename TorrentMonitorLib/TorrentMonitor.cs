@@ -39,7 +39,14 @@ namespace TorrentMonitorLib
         private TorrentMonitor(MonitorConfig config, MonitorState state)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.state = state ?? throw new ArgumentNullException(nameof(state)); ;
+            this.state = state ?? throw new ArgumentNullException(nameof(state));
+
+            feedItemQueue = new ConcurrentQueue<FeedItemMatch>(state.FeedItemMatches);
+            feedItemQueueAsync = new AsyncCollection<FeedItemMatch>(feedItemQueue);
+            torrentQueue = new ConcurrentQueue<Torrent>(state.Torrents);
+            torrentQueueAsync = new AsyncCollection<Torrent>(torrentQueue);
+            feedProcessors = new Dictionary<Uri, FeedProcessor>();
+            tasks = new List<Task>();
         }
 
         public void Start()
@@ -48,13 +55,7 @@ namespace TorrentMonitorLib
             {
                 logger.Info("Starting");
 
-                tasks = new List<Task>();
                 ctSource = new CancellationTokenSource();
-                feedProcessors = new Dictionary<Uri, FeedProcessor>();
-                feedItemQueue = new ConcurrentQueue<FeedItemMatch>(state.FeedItemMatches);
-                feedItemQueueAsync = new AsyncCollection<FeedItemMatch>(feedItemQueue);
-                torrentQueue = new ConcurrentQueue<Torrent>(state.Torrents);
-                torrentQueueAsync = new AsyncCollection<Torrent>(torrentQueue);
 
                 var feedProcessorDelay = TimeSpan.FromSeconds(config.FeedUpdateFrequencySeconds);
                 foreach (var feedInfo in config.Feeds)
@@ -100,13 +101,14 @@ namespace TorrentMonitorLib
                 // out of the data processors and queues
                 await CancelTasksAndLogExceptions().ConfigureAwait(false);
 
-                // Prevent any further additions to the queues
-                feedItemQueueAsync.CompleteAdding();
-                torrentQueueAsync.CompleteAdding();
-
+                // Save all the things
                 var saveConfigTask = SaveUpdatedConfig(CancellationToken.None);
                 var saveStateTask = SaveUpdatedState(CancellationToken.None);
                 await Task.WhenAll(saveConfigTask, saveStateTask).ConfigureAwait(false);
+
+                // Clear tasks and feed processors so they can be GC-ed
+                feedProcessors.Clear();
+                tasks.Clear();
 
                 isStarted = false;
             }

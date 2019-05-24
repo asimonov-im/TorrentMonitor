@@ -14,7 +14,6 @@ namespace TorrentMonitorUI
         public MainForm(TorrentMonitor monitor)
         {
             this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
-            monitor.Start();
 
             InitializeComponent();
         }
@@ -133,6 +132,8 @@ namespace TorrentMonitorUI
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            monitor.Start();
+
             patternListView.Columns.Add("Pattern", -2, HorizontalAlignment.Left);
             patternListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             patternListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
