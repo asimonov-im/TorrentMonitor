@@ -100,6 +100,7 @@ namespace TorrentMonitorUI
             {
                 int selectedIndex = patternListView.SelectedItems[0].Index;
                 patternListView.Items[selectedIndex].Text = pattern.Pattern;
+                monitor.Patterns = monitor.Patterns.RemoveAt(selectedIndex);
                 monitor.Patterns = monitor.Patterns.Insert(selectedIndex, pattern);
 
                 patternListView.SelectedItems.Clear();
